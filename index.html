@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis IPA Interaktif - Fisika, Biologi, Kimia</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter & Outfit -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .font-display { font-family: 'Outfit', sans-serif; }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .dark .glass-card {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .btn-glow {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px -3px rgba(14, 165, 233, 0.4);
+        }
+        .btn-glow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px -4px rgba(14, 165, 233, 0.6);
+        }
+
+        .animated-bg {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .correct-anim {
+            animation: pulse-green 0.5s cubic-bezier(0.4, 0, 0.6, 1);
+        }
+        .wrong-anim {
+            animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        @keyframes pulse-green {
+            0%, 100% { opacity: 1; }
+            50% { transform: scale(1.02); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col justify-between selection:bg-sky-500 selection:text-white transition-colors duration-300">
+
+    <!-- Header / Navbar -->
+    <header class="w-full max-w-5xl mx-auto px-4 pt-6 pb-2 flex justify-between items-center">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="goToStart()">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-sky-500/30">
+                <i class="fa-solid fa-atom text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-display font-bold text-xl leading-none text-slate-900 dark:text-white">Kuis IPA</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Sains, Biologi, Fisika, Kimia</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <!-- Audio Toggle Button -->
+            <button id="soundToggleBtn" onclick="toggleSound()" class="p-2.5 rounded-xl glass-card text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition" title="Mute/Unmute Suara">
+                <i id="soundIcon" class="fa-solid fa-volume-high"></i>
+            </button>
+            <!-- Dark Mode Toggle Button -->
+            <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl glass-card text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition" title="Ganti Mode Terang/Gelap">
+                <i id="themeIcon" class="fa-solid fa-moon"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="w-full max-w-3xl mx-auto px-4 py-6 flex-grow flex flex-col justify-center">
+
+        <!-- SCREEN 1: Setup & Category Selection Screen -->
+        <section id="setupScreen" class="glass-card rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+            <div class="text-center mb-8">
+                <span class="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-sky-600 dark:text-sky-400 bg-sky-100 dark:bg-sky-950/80 rounded-full">Uji Pengetahuanmu</span>
+                <h2 class="font-display text-3xl md:text-4xl font-extrabold mt-3 text-slate-900 dark:text-white">Petualangan Sains IPA</h2>
+                <p class="text-slate-600 dark:text-slate-400 mt-2 text-sm md:text-base">Pilih kategori dan tingkat kesulitan kuis untuk memulai tantangan.</p>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Topic Selection -->
+                <div>
+                    <label class="block text-sm font-semibold mb-3 text-slate-700 dark:text-slate-300">Pilih Topik Materi:</label>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <button type="button" onclick="selectTopic('all')" class="topic-btn active bg-sky-500 text-white p-3.5 rounded-2xl border-2 border-sky-500 font-medium text-sm flex flex-col items-center justify-center space-y-2 transition shadow-sm" data-topic="all">
+                            <i class="fa-solid fa-flask text-xl"></i>
+                            <span>Campuran</span>
+                        </button>
+                        <button type="button" onclick="selectTopic('fisika')" class="topic-btn bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 p-3.5 rounded-2xl border-2 border-slate-200 dark:border-slate-800 font-medium text-sm flex flex-col items-center justify-center space-y-2 transition hover:border-sky-500/50" data-topic="fisika">
+                            <i class="fa-solid fa-bolt text-xl text-amber-500"></i>
+                            <span>Fisika</span>
+                        </button>
+                        <button type="button" onclick="selectTopic('biologi')" class="topic-btn bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 p-3.5 rounded-2xl border-2 border-slate-200 dark:border-slate-800 font-medium text-sm flex flex-col items-center justify-center space-y-2 transition hover:border-sky-500/50" data-topic="biologi">
+                            <i class="fa-solid fa-dna text-xl text-emerald-500"></i>
+                            <span>Biologi</span>
+                        </button>
+                        <button type="button" onclick="selectTopic('kimia')" class="topic-btn bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 p-3.5 rounded-2xl border-2 border-slate-200 dark:border-slate-800 font-medium text-sm flex flex-col items-center justify-center space-y-2 transition hover:border-sky-500/50" data-topic="kimia">
+                            <i class="fa-solid fa-atom text-xl text-indigo-500"></i>
+                            <span>Kimia</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Difficulty Selection -->
+                <div>
+                    <label class="block text-sm font-semibold mb-3 text-slate-700 dark:text-slate-300">Tingkat Kesulitan:</label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <button type="button" onclick="selectDifficulty('easy')" class="diff-btn bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-800 font-medium text-sm flex items-center justify-center space-x-2 transition hover:border-emerald-500" data-diff="easy">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            <span>Mudah</span>
+                        </button>
+                        <button type="button" onclick="selectDifficulty('medium')" class="diff-btn active bg-sky-500 text-white p-3 rounded-2xl border-2 border-sky-500 font-medium text-sm flex items-center justify-center space-x-2 transition" data-diff="medium">
+                            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                            <span>Sedang</span>
+                        </button>
+                        <button type="button" onclick="selectDifficulty('hard')" class="diff-btn bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-800 font-medium text-sm flex items-center justify-center space-x-2 transition hover:border-rose-500" data-diff="hard">
+                            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                            <span>Sulit</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Start Button -->
+                <div class="pt-4">
+                    <button onclick="startQuiz()" class="w-full py-4 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-display font-bold text-lg rounded-2xl btn-glow flex items-center justify-center space-x-2">
+                        <span>Mulai Kuis Sekarang</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 2: Quiz Gameplay Screen -->
+        <section id="quizScreen" class="hidden glass-card rounded-3xl p-6 md:p-8 shadow-2xl relative">
+            <!-- Progress & Timer Bar -->
+            <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-200 dark:border-slate-800">
+                <div class="flex items-center space-x-3">
+                    <span id="topicBadge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300">
+                        Topik
+                    </span>
+                    <span id="questionCounter" class="text-sm font-semibold text-slate-600 dark:text-slate-400">
+                        Soal 1/10
+                    </span>
+                </div>
+                <!-- Countdown Timer -->
+                <div class="flex items-center space-x-2 bg-slate-100 dark:bg-slate-900 px-3.5 py-1.5 rounded-full border border-slate-200 dark:border-slate-800">
+                    <i class="fa-regular fa-clock text-sky-500"></i>
+                    <span id="timerText" class="font-mono font-bold text-slate-800 dark:text-slate-200 text-sm">15s</span>
+                </div>
+            </div>
+
+            <!-- Visual Progress Bar -->
+            <div class="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full mb-6 overflow-hidden">
+                <div id="progressBar" class="bg-gradient-to-r from-sky-500 to-indigo-500 h-full w-0 transition-all duration-300 rounded-full"></div>
+            </div>
+
+            <!-- Question Text -->
+            <div class="mb-6">
+                <h3 id="questionText" class="text-lg md:text-xl font-bold text-slate-900 dark:text-white leading-relaxed">
+                    Memuat pertanyaan...
+                </h3>
+            </div>
+
+            <!-- Options Grid -->
+            <div id="optionsContainer" class="grid grid-cols-1 gap-3 mb-6">
+                <!-- Dynamic options generated by JS -->
+            </div>
+
+            <!-- Explanation Panel (Revealed after answer selection) -->
+            <div id="explanationContainer" class="hidden p-4 rounded-2xl bg-sky-50 dark:bg-slate-900/90 border border-sky-200 dark:border-sky-900/50 mb-6 transition-all duration-300">
+                <div class="flex items-start space-x-3">
+                    <div id="explanationIcon" class="mt-0.5 text-lg">
+                        <i class="fa-solid fa-circle-info text-sky-500"></i>
+                    </div>
+                    <div>
+                        <h4 id="explanationTitle" class="font-bold text-sm text-slate-900 dark:text-white mb-1">Pembahasan:</h4>
+                        <p id="explanationText" class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                            Penjelasan rinci akan muncul di sini.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Next / Finish Button -->
+            <div class="flex justify-end">
+                <button id="nextBtn" onclick="nextQuestion()" disabled class="px-6 py-3 bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-600 font-bold rounded-xl flex items-center space-x-2 transition cursor-not-allowed">
+                    <span>Soal Berikutnya</span>
+                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- SCREEN 3: Result & Summary Screen -->
+        <section id="resultScreen" class="hidden glass-card rounded-3xl p-6 md:p-8 shadow-2xl text-center">
+            <div class="inline-flex p-4 rounded-full bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 mb-4 shadow-inner">
+                <i id="resultBadgeIcon" class="fa-solid fa-trophy text-4xl"></i>
+            </div>
+
+            <h2 class="font-display text-3xl font-extrabold text-slate-900 dark:text-white">Hasil Kuis IPA</h2>
+            <p id="resultPredicate" class="text-sky-600 dark:text-sky-400 font-semibold mt-1 text-lg">Luar Biasa!</p>
+
+            <!-- Score Circle Display -->
+            <div class="my-6 flex justify-center">
+                <div class="relative w-36 h-36 flex items-center justify-center rounded-full bg-gradient-to-tr from-sky-500 to-indigo-600 p-1 shadow-xl">
+                    <div class="w-full h-full bg-white dark:bg-slate-900 rounded-full flex flex-col items-center justify-center">
+                        <span id="scorePercent" class="font-display text-4xl font-extrabold text-slate-900 dark:text-white">0%</span>
+                        <span id="scoreFraction" class="text-xs font-semibold text-slate-500 dark:text-slate-400">Skor: 0 / 0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-3 gap-3 my-6 max-w-md mx-auto">
+                <div class="bg-emerald-50 dark:bg-emerald-950/30 p-3 rounded-2xl border border-emerald-200 dark:border-emerald-900/50">
+                    <span class="block text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase">Benar</span>
+                    <span id="correctCount" class="font-display text-xl font-bold text-emerald-700 dark:text-emerald-300">0</span>
+                </div>
+                <div class="bg-rose-50 dark:bg-rose-950/30 p-3 rounded-2xl border border-rose-200 dark:border-rose-900/50">
+                    <span class="block text-rose-600 dark:text-rose-400 text-xs font-bold uppercase">Salah</span>
+                    <span id="wrongCount" class="font-display text-xl font-bold text-rose-700 dark:text-rose-300">0</span>
+                </div>
+                <div class="bg-amber-50 dark:bg-amber-950/30 p-3 rounded-2xl border border-amber-200 dark:border-amber-900/50">
+                    <span class="block text-amber-600 dark:text-amber-400 text-xs font-bold uppercase">Waktu</span>
+                    <span id="totalTimeText" class="font-display text-xl font-bold text-amber-700 dark:text-amber-300">0s</span>
+                </div>
+            </div>
+
+            <!-- Review Answers Accordion Toggle -->
+            <div class="text-left mt-8 border-t border-slate-200 dark:border-slate-800 pt-6">
+                <h3 class="font-bold text-slate-900 dark:text-white mb-4 flex items-center justify-between">
+                    <span><i class="fa-solid fa-list-check mr-2 text-sky-500"></i> Resume & Pembahasan Jawaban</span>
+                    <span class="text-xs font-normal text-slate-500">Detail Jawaban Anda</span>
+                </h3>
+
+                <div id="reviewContainer" class="space-y-4 max-h-80 overflow-y-auto pr-2">
+                    <!-- Dynamic review list generated by JS -->
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button onclick="goToStart()" class="w-full sm:w-auto px-6 py-3.5 rounded-2xl border-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span>Menu Utama</span>
+                </button>
+                <button onclick="restartQuiz()" class="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold rounded-2xl btn-glow flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-play"></i>
+                    <span>Coba Lagi</span>
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full text-center py-4 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200/50 dark:border-slate-900">
+        <p>Aplikasi Kuis IPA &copy; 2026 • Dirancang untuk Pembelajaran Interaktif</p>
+    </footer>
+
+    <script>
+        /* --- QUESTION BANK (Materi IPA: Fisika, Biologi, Kimia) --- */
+        const quizData = [
+            // BIOLOGI
+            {
+                id: 1,
+                topic: 'biologi',
+                difficulty: 'easy',
+                question: 'Organel sel yang berfungsi sebagai tempat terjadinya respirasi seluler dan penghasil energi sel adalah...',
+                options: ['Lisosom', 'Mitokondria', 'Ribosom', 'Badan Golgi'],
+                correct: 1,
+                explanation: 'Mitokondria sering disebut "powerhouse of cell" karena berfungsi mengubah energi kimia makanan menjadi molekul ATP melalui respirasi seluler.'
+            },
+            {
+                id: 2,
+                topic: 'biologi',
+                difficulty: 'medium',
+                question: 'Proses pemindahan air dari larutan hipotonis ke hipertonis melalui membran semipermeabel disebut...',
+                options: ['Difusi', 'Osmosis', 'Endositosis', 'Eksositosis'],
+                correct: 1,
+                explanation: 'Osmosis adalah perpindahan pelarut (seperti air) melintasi membran selektif permeabel dari daerah berkonsentrasi pelarut tinggi (hipotonis) ke berkonsentrasi pelarut rendah (hipertonis).'
+            },
+            {
+                id: 3,
+                topic: 'biologi',
+                difficulty: 'hard',
+                question: 'Bagian jantung yang menerima darah kaya akan oksigen dari paru-paru melalui vena pulmonalis adalah...',
+                options: ['Serambi Kanan (Atrium Dextra)', 'Bilik Kanan (Ventrikel Dextra)', 'Serambi Kiri (Atrium Sinistra)', 'Bilik Kiri (Ventrikel Sinistra)'],
+                correct: 2,
+                explanation: 'Serambi kiri (Atrium Sinistra) menerima darah kaya O2 langsung dari paru-paru via vena pulmonalis, kemudian dialirkan ke bilik kiri untuk dipompa ke seluruh tubuh.'
+            },
+
+            // FISIKA
+            {
+                id: 4,
+                topic: 'fisika',
+                difficulty: 'easy',
+                question: 'Hukum Newton mana yang menyatakan bahwa percepatan benda sebanding dengan gaya total yang bekerja padanya (F = m × a)?',
+                options: ['Hukum I Newton', 'Hukum II Newton', 'Hukum III Newton', 'Hukum Gravitasi Universal'],
+                correct: 1,
+                explanation: 'Hukum II Newton menyatakan bahwa percepatan sebuah benda berbanding lurus dengan gaya net yang bekerja padanya dan berbanding terbalik dengan massanya (F = m.a).'
+            },
+            {
+                id: 5,
+                topic: 'fisika',
+                difficulty: 'medium',
+                question: 'Sebuah gelombang memiliki frekuensi 50 Hz dan panjang gelombang 2 meter. Berapakah cepat rambat gelombang tersebut?',
+                options: ['25 m/s', '100 m/s', '50 m/s', '200 m/s'],
+                correct: 1,
+                explanation: 'Cepat rambat gelombang (v) dihitung dengan rumus v = f × λ. Jadi, v = 50 Hz × 2 m = 100 m/s.'
+            },
+            {
+                id: 6,
+                topic: 'fisika',
+                difficulty: 'hard',
+                question: 'Peristiwa pembelokan arah rambat cahaya ketika melewati medium dengan kerapatan optik yang berbeda disebut...',
+                options: ['Refleksi', 'Refraksi', 'Difraksi', 'Interferensi'],
+                correct: 1,
+                explanation: 'Refraksi (pembiasan) adalah pembelokan gelombang cahaya saat melintasi antarmuka antara dua medium berkerapatan optik beda akibat perubahan kecepatan cahaya.'
+            },
+
+            // KIMIA
+            {
+                id: 7,
+                topic: 'kimia',
+                difficulty: 'easy',
+                question: 'Larutan yang memiliki nilai pH kurang dari 7 tergolong ke dalam jenis larutan...',
+                options: ['Basa', 'Netral', 'Asam', 'Garam'],
+                correct: 2,
+                explanation: 'Skala pH berkisar dari 0 - 14. Larutan dengan pH < 7 bersifat Asam, pH = 7 bersifat Netral, dan pH > 7 bersifat Basa.'
+            },
+            {
+                id: 8,
+                topic: 'kimia',
+                difficulty: 'medium',
+                question: 'Partikel penyusun inti atom yang bermuatan listrik positif adalah...',
+                options: ['Elektron', 'Proton', 'Neutron', 'Positron'],
+                correct: 1,
+                explanation: 'Inti atom (nukleus) terdiri dari Proton (bermuatan positif) dan Neutron (netral/tidak bermuatan). Sedangkan Elektron (bermuatan negatif) mengelilingi inti.'
+            },
+            {
+                id: 9,
+                topic: 'kimia',
+                difficulty: 'hard',
+                question: 'Reaksi kimia yang menyerap kalor atau energi thermal dari lingkungan ke sistem dinamakan...',
+                options: ['Reaksi Eksoterm', 'Reaksi Endoterm', 'Reaksi Oksidasi', 'Reaksi Reduksi'],
+                correct: 1,
+                explanation: 'Reaksi endoterm menyerap kalor dari lingkungan ke dalam sistem, mengakibatkan suhu lingkungan sekitar menjadi turun.'
+            }
+        ];
+
+        /* --- STATE VARIABLES --- */
+        let currentQuestions = [];
+        let currentIndex = 0;
+        let score = 0;
+        let selectedTopic = 'all';
+        let selectedDifficulty = 'medium';
+        let timer = null;
+        let timeLeft = 15;
+        let timePerQuestion = 15;
+        let totalTimeSpent = 0;
+        let soundEnabled = true;
+        let userAnswers = []; // Store answers history
+
+        /* --- WEB AUDIO API SYNTHESIZER (No external audio files required) --- */
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'correct') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                    osc.frequency.exponentialRampToValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+                    osc.frequency.exponentialRampToValueAtTime(783.99, audioCtx.currentTime + 0.2); // G5
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.35);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'tick') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.05);
+                } else if (type === 'win') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.4);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.6);
+                }
+            } catch(e) {
+                console.log("Audio not allowed yet");
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const soundIcon = document.getElementById('soundIcon');
+            if (soundEnabled) {
+                soundIcon.className = 'fa-solid fa-volume-high';
+            } else {
+                soundIcon.className = 'fa-solid fa-volume-xmark text-rose-500';
+            }
+        }
+
+        /* --- DARK MODE TOGGLE --- */
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('themeIcon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                themeIcon.className = 'fa-solid fa-moon';
+            } else {
+                html.classList.add('dark');
+                themeIcon.className = 'fa-solid fa-sun text-amber-400';
+            }
+        }
+
+        /* --- CATEGORY & DIFFICULTY SELECTION --- */
+        function selectTopic(topic) {
+            selectedTopic = topic;
+            document.querySelectorAll('.topic-btn').forEach(btn => {
+                if (btn.dataset.topic === topic) {
+                    btn.className = 'topic-btn active bg-sky-500 text-white p-3.5 rounded-2xl border-2 border-sky-500 font-medium text-sm flex flex-col items-center justify-center space-y-2 transition shadow-sm';
+                } else {
+                    btn.className = 'topic-btn bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 p-3.5 rounded-2xl border-2 border-slate-200 dark:border-slate-800 font-medium text-sm flex flex-col items-center justify-center space-y-2 transition hover:border-sky-500/50';
+                }
+            });
+        }
+
+        function selectDifficulty(diff) {
+            selectedDifficulty = diff;
+            document.querySelectorAll('.diff-btn').forEach(btn => {
+                if (btn.dataset.diff === diff) {
+                    btn.className = 'diff-btn active bg-sky-500 text-white p-3 rounded-2xl border-2 border-sky-500 font-medium text-sm flex items-center justify-center space-x-2 transition';
+                } else {
+                    btn.className = 'diff-btn bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-800 font-medium text-sm flex items-center justify-center space-x-2 transition hover:border-sky-500/50';
+                }
+            });
+        }
+
+        /* --- GAME ENGINE LOGIC --- */
+        function startQuiz() {
+            // Filter questions based on topic & difficulty
+            currentQuestions = quizData.filter(q => {
+                const matchTopic = selectedTopic === 'all' || q.topic === selectedTopic;
+                const matchDiff = q.difficulty === selectedDifficulty;
+                return matchTopic && matchDiff;
+            });
+
+            // Fallback if no specific match exists
+            if (currentQuestions.length === 0) {
+                currentQuestions = quizData.filter(q => selectedTopic === 'all' || q.topic === selectedTopic);
+            }
+
+            // Shuffle questions
+            currentQuestions.sort(() => Math.random() - 0.5);
+
+            // Set time per question based on difficulty
+            if (selectedDifficulty === 'easy') timePerQuestion = 20;
+            else if (selectedDifficulty === 'medium') timePerQuestion = 15;
+            else timePerQuestion = 10;
+
+            // Reset States
+            currentIndex = 0;
+            score = 0;
+            totalTimeSpent = 0;
+            userAnswers = [];
+
+            // UI Transition
+            document.getElementById('setupScreen').classList.add('hidden');
+            document.getElementById('resultScreen').classList.add('hidden');
+            document.getElementById('quizScreen').classList.remove('hidden');
+
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            clearInterval(timer);
+            const q = currentQuestions[currentIndex];
+
+            // Set Topic Badge UI
+            const topicBadge = document.getElementById('topicBadge');
+            topicBadge.textContent = q.topic;
+
+            // Set Question Counter & Text
+            document.getElementById('questionCounter').textContent = `Soal ${currentIndex + 1}/${currentQuestions.length}`;
+            document.getElementById('questionText').textContent = q.question;
+
+            // Update Progress Bar
+            const progressPercent = ((currentIndex) / currentQuestions.length) * 100;
+            document.getElementById('progressBar').style.width = `${progressPercent}%`;
+
+            // Reset Explanation Panel & Next Button
+            document.getElementById('explanationContainer').classList.add('hidden');
+            const nextBtn = document.getElementById('nextBtn');
+            nextBtn.disabled = true;
+            nextBtn.className = 'px-6 py-3 bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-600 font-bold rounded-xl flex items-center justify-center space-x-2 transition cursor-not-allowed';
+
+            // Generate Options
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = '';
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn w-full p-4 text-left rounded-2xl border-2 border-slate-200 dark:border-slate-800 hover:border-sky-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-medium transition flex items-center justify-between group';
+                btn.onclick = () => selectOption(idx);
+                btn.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <span class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 group-hover:bg-sky-500 group-hover:text-white flex items-center justify-center font-bold text-sm transition">
+                            ${String.fromCharCode(65 + idx)}
+                        </span>
+                        <span class="text-sm md:text-base">${opt}</span>
+                    </div>
+                    <i class="option-icon fa-regular fa-circle text-slate-300 dark:text-slate-700"></i>
+                `;
+                container.appendChild(btn);
+            });
+
+            // Start Timer
+            timeLeft = timePerQuestion;
+            updateTimerDisplay();
+            timer = setInterval(() => {
+                timeLeft--;
+                totalTimeSpent++;
+                updateTimerDisplay();
+                if (timeLeft <= 3 && timeLeft > 0) playSound('tick');
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    timeOutHandler();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            document.getElementById('timerText').textContent = `${timeLeft}s`;
+        }
+
+        function selectOption(selectedIndex) {
+            clearInterval(timer);
+            const q = currentQuestions[currentIndex];
+            const isCorrect = selectedIndex === q.correct;
+
+            if (isCorrect) {
+                score++;
+                playSound('correct');
+            } else {
+                playSound('wrong');
+            }
+
+            // Save user answer history
+            userAnswers.push({
+                question: q.question,
+                userChoice: selectedIndex,
+                correctChoice: q.correct,
+                options: q.options,
+                explanation: q.explanation,
+                isCorrect: isCorrect
+            });
+
+            // Style Options
+            const options = document.querySelectorAll('.option-btn');
+            options.forEach((btn, idx) => {
+                btn.onclick = null; // Disable further clicking
+                const icon = btn.querySelector('.option-icon');
+
+                if (idx === q.correct) {
+                    btn.className = 'w-full p-4 text-left rounded-2xl border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100 font-medium flex items-center justify-between correct-anim';
+                    icon.className = 'fa-solid fa-circle-check text-emerald-500 text-lg';
+                } else if (idx === selectedIndex && !isCorrect) {
+                    btn.className = 'w-full p-4 text-left rounded-2xl border-2 border-rose-500 bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-100 font-medium flex items-center justify-between wrong-anim';
+                    icon.className = 'fa-solid fa-circle-xmark text-rose-500 text-lg';
+                } else {
+                    btn.className = 'w-full p-4 text-left rounded-2xl border-2 border-slate-200 dark:border-slate-800 opacity-50 bg-white dark:bg-slate-900 text-slate-500 flex items-center justify-between';
+                }
+            });
+
+            // Show Explanation
+            showExplanation(q.explanation, isCorrect);
+            enableNextButton();
+        }
+
+        function timeOutHandler() {
+            const q = currentQuestions[currentIndex];
+            playSound('wrong');
+
+            userAnswers.push({
+                question: q.question,
+                userChoice: -1, // Timeout flag
+                correctChoice: q.correct,
+                options: q.options,
+                explanation: q.explanation,
+                isCorrect: false
+            });
+
+            const options = document.querySelectorAll('.option-btn');
+            options.forEach((btn, idx) => {
+                btn.onclick = null;
+                const icon = btn.querySelector('.option-icon');
+                if (idx === q.correct) {
+                    btn.className = 'w-full p-4 text-left rounded-2xl border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100 font-medium flex items-center justify-between';
+                    icon.className = 'fa-solid fa-circle-check text-emerald-500 text-lg';
+                } else {
+                    btn.className = 'w-full p-4 text-left rounded-2xl border-2 border-slate-200 dark:border-slate-800 opacity-50 bg-white dark:bg-slate-900 text-slate-500 flex items-center justify-between';
+                }
+            });
+
+            showExplanation('Waktu habis! ' + q.explanation, false);
+            enableNextButton();
+        }
+
+        function showExplanation(text, isCorrect) {
+            const container = document.getElementById('explanationContainer');
+            const icon = document.getElementById('explanationIcon');
+            const title = document.getElementById('explanationTitle');
+            const explanationText = document.getElementById('explanationText');
+
+            container.classList.remove('hidden');
+            explanationText.textContent = text;
+
+            if (isCorrect) {
+                icon.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-500"></i>';
+                title.textContent = 'Jawaban Benar!';
+                title.className = 'font-bold text-sm text-emerald-600 dark:text-emerald-400 mb-1';
+            } else {
+                icon.innerHTML = '<i class="fa-solid fa-circle-exclamation text-rose-500"></i>';
+                title.textContent = 'Pembahasan / Jawaban Tepat:';
+                title.className = 'font-bold text-sm text-rose-600 dark:text-rose-400 mb-1';
+            }
+        }
+
+        function enableNextButton() {
+            const nextBtn = document.getElementById('nextBtn');
+            nextBtn.disabled = false;
+            nextBtn.className = 'px-6 py-3 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl flex items-center justify-center space-x-2 transition shadow-md btn-glow cursor-pointer';
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            if (currentIndex < currentQuestions.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        /* --- RESULT & SUMMARY DISPLAY --- */
+        function showResults() {
+            document.getElementById('quizScreen').classList.add('hidden');
+            document.getElementById('resultScreen').classList.remove('hidden');
+
+            const total = currentQuestions.length;
+            const percentage = Math.round((score / total) * 100);
+
+            document.getElementById('scorePercent').textContent = `${percentage}%`;
+            document.getElementById('scoreFraction').textContent = `Skor: ${score} / ${total}`;
+            document.getElementById('correctCount').textContent = score;
+            document.getElementById('wrongCount').textContent = total - score;
+            document.getElementById('totalTimeText').textContent = `${totalTimeSpent}s`;
+
+            // Set Predicate & Icon
+            const predicate = document.getElementById('resultPredicate');
+            const badgeIcon = document.getElementById('resultBadgeIcon');
+
+            if (percentage >= 80) {
+                predicate.textContent = 'Luar Biasa! Genius Sains!';
+                badgeIcon.className = 'fa-solid fa-trophy text-4xl text-amber-500';
+                playSound('win');
+                // Trigger Confetti Animation
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            } else if (percentage >= 50) {
+                predicate.textContent = 'Bagus! Tetap Tingkatkan!';
+                badgeIcon.className = 'fa-solid fa-medal text-4xl text-sky-500';
+            } else {
+                predicate.textContent = 'Jangan Patah Semangat, Coba Lagi!';
+                badgeIcon.className = 'fa-solid fa-book-open text-4xl text-indigo-500';
+            }
+
+            // Build Answer Review Accordion List
+            const reviewContainer = document.getElementById('reviewContainer');
+            reviewContainer.innerHTML = '';
+
+            userAnswers.forEach((ans, idx) => {
+                const item = document.createElement('div');
+                item.className = `p-4 rounded-2xl border text-left ${
+                    ans.isCorrect 
+                        ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/40' 
+                        : 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/40'
+                }`;
+
+                const userAnsText = ans.userChoice >= 0 ? ans.options[ans.userChoice] : 'Waktu Habis';
+                const correctAnsText = ans.options[ans.correctChoice];
+
+                item.innerHTML = `
+                    <div class="flex items-start justify-between">
+                        <span class="font-bold text-xs uppercase ${ans.isCorrect ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">
+                            Soal #${idx + 1} • ${ans.isCorrect ? 'BENAR' : 'SALAH'}
+                        </span>
+                    </div>
+                    <p class="font-semibold text-slate-800 dark:text-slate-200 text-sm mt-1 mb-2">${ans.question}</p>
+                    <div class="text-xs space-y-1 text-slate-600 dark:text-slate-400">
+                        <p><span class="font-semibold">Jawaban Anda:</span> <span class="${ans.isCorrect ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-rose-600 dark:text-rose-400 font-bold'}">${userAnsText}</span></p>
+                        ${!ans.isCorrect ? `<p><span class="font-semibold">Jawaban Tepat:</span> <span class="text-emerald-600 dark:text-emerald-400 font-bold">${correctAnsText}</span></p>` : ''}
+                        <p class="mt-2 pt-2 border-t border-slate-200 dark:border-slate-800 italic text-slate-500">${ans.explanation}</p>
+                    </div>
+                `;
+                reviewContainer.appendChild(item);
+            });
+        }
+
+        /* --- NAVIGATION HELPERS --- */
+        function goToStart() {
+            clearInterval(timer);
+            document.getElementById('quizScreen').classList.add('hidden');
+            document.getElementById('resultScreen').classList.add('hidden');
+            document.getElementById('setupScreen').classList.remove('hidden');
+        }
+
+        function restartQuiz() {
+            startQuiz();
+        }
+    </script>
+</body>
+</html>
